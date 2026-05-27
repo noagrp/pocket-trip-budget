@@ -266,7 +266,7 @@
 
     <div class="mode-toggle-container">
         <button class="mode-btn active" id="btn-mode-active" onclick="setAppMode('active')">🏃 On-The-Go Logging</button>
-        <button class="mode-btn" id="btn-mode-done" onclick="setAppMode('done')">🏁 Trip Finished Invoice</button>
+        <button class="mode-btn" id="btn-mode-done" onclick="setAppMode('done')">🏁 Reports</button>
     </div>
 
     <div class="card" id="card-config">
@@ -312,8 +312,10 @@
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <button class="btn-secondary" onclick="exportDataBackup()">📥 Export Backup</button>
-            <button class="btn-secondary" onclick="triggerImportSelection()">📤 Import Restore</button>
+            <button class="btn-secondary" onclick="exportDataBackup()">📥 Export</button>
+            <button class="btn-secondary" onclick="triggerImportSelection()">📤 Import</button>
+<button class="btn-secondary" style="background: var(--danger); color: white; margin-top: 10px;" 
+        onclick="closeBudgetAndWipe()">🔒 Close Budget</button>
             <input type="file" id="hidden-import-file" style="display: none;" accept=".json" onchange="importDataBackup(event)">
             
             <div class="backup-callout-text">
@@ -798,6 +800,25 @@
             calculateBudget();
         });
     });
+
+window.closeBudgetAndWipe = function() {
+    if (confirm("⚠️ This will EXPORT your current data and then PERMANENTLY WIPE all records from this browser. Proceed?")) {
+        // Trigger export first
+        exportDataBackup();
+        
+        // Clear all storage related to the app
+        localStorage.removeItem('trip_pool_expenses');
+        localStorage.removeItem('setup_budget_pax');
+        localStorage.removeItem('setup_people_count');
+        localStorage.removeItem('setup_days_count');
+        localStorage.removeItem('setup_rate_mode');
+        localStorage.removeItem('setup_manual_rate');
+        
+        // Reset local variables and UI
+        poolExpenses = [];
+        location.reload();
+    }
+};
 
     loadSavedSetupValues();
     fetchLiveRates();
