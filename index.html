@@ -252,13 +252,20 @@
         return (rateMode.value === 'auto' && autoExchangeRates[dest]) ? (autoExchangeRates[dest] / autoExchangeRates[home]) : (parseFloat(manualRateInput.value) || 1.0);
     }
 
-    async function fetchLiveRates() {
-        try {
-            const res = await fetch(`https://open.er-api.com/v6/latest/USD`);
-            if (res.ok) { autoExchangeRates = (await res.json()).rates; populateGlobalCurrencyMenus(autoExchangeRates); }
-        } catch (e) { populateGlobalCurrencyMenus(autoExchangeRates); }
-        calculateBudget();
-    }
+async function fetchLiveRates() {
+    try {
+        const res = await fetch(`https://open.er-api.com/v6/latest/USD`);
+        if (res.ok) { 
+            const data = await res.json();
+            autoExchangeRates = data.rates; 
+            // Update the new note with the primary target currency rate
+            document.getElementById('rate-display-note').innerText = 
+                (autoExchangeRates[foreignCurrency.value] || '---') + " " + foreignCurrency.value;
+            populateGlobalCurrencyMenus(autoExchangeRates); 
+        }
+    } catch (e) { populateGlobalCurrencyMenus(autoExchangeRates); }
+    calculateBudget();
+}
 
     function calculateBudget() {
         const home = baseCurrency.value;
