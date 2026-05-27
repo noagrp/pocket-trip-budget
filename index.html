@@ -241,6 +241,20 @@
             justify-content: space-between;
         }
         .rate-info-bar strong { color: var(--text); }
+
+        /* Style Utilities for Backup Callout box text block */
+        .backup-callout-text {
+            grid-column: span 2;
+            font-size: 0.72rem;
+            color: var(--danger);
+            background: rgba(248, 113, 113, 0.05);
+            border: 1px solid rgba(248, 113, 113, 0.15);
+            padding: 8px 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -301,6 +315,10 @@
             <button class="btn-secondary" onclick="exportDataBackup()">📥 Export Backup</button>
             <button class="btn-secondary" onclick="triggerImportSelection()">📤 Import Restore</button>
             <input type="file" id="hidden-import-file" style="display: none;" accept=".json" onchange="importDataBackup(event)">
+            
+            <div class="backup-callout-text">
+                ⚠️ Export a backup file occasionally to protect data if browser logs get cleared.
+            </div>
         </div>
 
         <div class="rate-info-bar">
@@ -413,7 +431,6 @@
     const refApiCode = document.getElementById('ref-api-code');
     const formForeignLabel = document.getElementById('form-foreign-label');
 
-    // NEW: Load existing setup inputs from persistence layers safely on boot
     function loadSavedSetupValues() {
         setupBudget.value = localStorage.getItem('setup_budget_pax') || "";
         setupPeople.value = localStorage.getItem('setup_people_count') || "";
@@ -422,7 +439,6 @@
         manualRateInput.value = localStorage.getItem('setup_manual_rate') || "";
     }
 
-    // NEW: Auto-saves current setup string modifications to memory layers instantly
     function autoSaveSetupValues() {
         localStorage.setItem('setup_budget_pax', setupBudget.value);
         localStorage.setItem('setup_people_count', setupPeople.value);
@@ -464,7 +480,7 @@
             document.getElementById('card-config').style.display = 'none';
             document.getElementById('card-entry-form').style.display = 'none';
             document.getElementById('box-daily-allowance').style.display = 'none';
-            document.getElementById('dashboard-title').innerHTML = "🏁 Final Trip Summary Invoice";
+            document.getElementById('dashboard-title').innerHTML = "🏁 Final Trip Summary";
             document.getElementById('lbl-pool-total').innerText = "Total Funds Collected";
             document.getElementById('lbl-pool-remain').innerText = "Unspent Balance Remaining";
         } else {
@@ -730,7 +746,7 @@
                         savedDestSelection = importedData.config.destinationCurrency || "JPY";
                     }
 
-                    autoSaveSetupValues(); // Sync persistence layers immediately
+                    autoSaveSetupValues();
                     populateGlobalCurrencyMenus(autoExchangeRates);
                     calculateBudget();
                     alert("🎉 Backup file loaded successfully!");
@@ -776,7 +792,6 @@
         calculateBudget();
     };
 
-    // Capture changes to run both math operations AND automated persistence operations
     [setupBudget, setupPeople, setupDays, baseCurrency, foreignCurrency, rateMode, manualRateInput].forEach(input => {
         input.addEventListener('input', () => {
             autoSaveSetupValues();
@@ -784,7 +799,6 @@
         });
     });
 
-    // Run Engine Lifecycle Initializations Safely
     loadSavedSetupValues();
     fetchLiveRates();
 </script>
