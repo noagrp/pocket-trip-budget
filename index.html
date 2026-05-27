@@ -95,8 +95,8 @@
             <div class="form-group"><label>Days</label><input type="number" id="setup-days"></div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-            <div class="form-group"><label>Home Currency</label><select id="base-currency"></select></div>
-            <div class="form-group"><label>Destination Currency</label><select id="foreign-currency"></select></div>
+            <div class="form-group"><label>Home Currency</label><input type="text" id="base-currency" placeholder="e.g. USD"></div>
+            <div class="form-group"><label>Destination Currency</label><input type="text" id="foreign-currency" placeholder="e.g. JPY"></div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
             <div class="form-group"><label>Manual Rate</label><input type="number" id="manual-rate-input" step="0.0001"></div>
@@ -139,7 +139,7 @@
         </form>
     </div>
 
-    <div class="card" id="card-category-report">
+    <div class="card" id="card-category-report" style="display: none;">
         <h2>🗂️ Category Distribution</h2>
         <div id="category-report-list"></div>
     </div>
@@ -152,9 +152,6 @@
 
 <script>
     let poolExpenses = JSON.parse(localStorage.getItem('trip_pool_expenses')) || [];
-    const currencies = ["USD", "EUR", "JPY", "GBP", "SGD", "MYR", "THB", "IDR", "VND", "KRW", "CNY", "AUD", "CAD", "CHF", "HKD", "NZD"];
-    let savedHomeSelection = localStorage.getItem('trip_home_curr') || "USD";
-    let savedDestSelection = localStorage.getItem('trip_dest_curr') || "JPY";
     let currentAppMode = 'active';
     let currentFormTab = 'expense';
 
@@ -169,20 +166,13 @@
     const dashSpent = document.getElementById('dash-spent');
     const dashDailyAllowance = document.getElementById('dash-daily-allowance');
 
-    function populateCurrencyMenus() {
-        baseCurrency.innerHTML = ''; foreignCurrency.innerHTML = '';
-        currencies.forEach(code => {
-            baseCurrency.add(new Option(code, code, code === savedHomeSelection, code === savedHomeSelection));
-            foreignCurrency.add(new Option(code, code, code === savedDestSelection, code === savedDestSelection));
-        });
-    }
-
     function loadSavedSetupValues() {
         setupBudget.value = localStorage.getItem('setup_budget_pax') || "";
         setupPeople.value = localStorage.getItem('setup_people_count') || "";
         setupDays.value = localStorage.getItem('setup_days_count') || "";
         manualRateInput.value = localStorage.getItem('setup_manual_rate') || "";
-        populateCurrencyMenus();
+        baseCurrency.value = localStorage.getItem('trip_home_curr') || "USD";
+        foreignCurrency.value = localStorage.getItem('trip_dest_curr') || "JPY";
     }
 
     function autoSaveSetupValues() {
@@ -225,7 +215,7 @@
     };
 
     function calculateBudget() {
-        const home = baseCurrency.value;
+        const home = baseCurrency.value || "---";
         const rate = parseFloat(manualRateInput.value) || 1.0;
         let totalPool = (parseFloat(setupBudget.value) || 0) * (parseInt(setupPeople.value) || 0);
         let totalSpent = 0;
