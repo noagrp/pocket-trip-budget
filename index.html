@@ -413,6 +413,24 @@
     const refApiCode = document.getElementById('ref-api-code');
     const formForeignLabel = document.getElementById('form-foreign-label');
 
+    // NEW: Load existing setup inputs from persistence layers safely on boot
+    function loadSavedSetupValues() {
+        setupBudget.value = localStorage.getItem('setup_budget_pax') || "";
+        setupPeople.value = localStorage.getItem('setup_people_count') || "";
+        setupDays.value = localStorage.getItem('setup_days_count') || "";
+        rateMode.value = localStorage.getItem('setup_rate_mode') || "auto";
+        manualRateInput.value = localStorage.getItem('setup_manual_rate') || "";
+    }
+
+    // NEW: Auto-saves current setup string modifications to memory layers instantly
+    function autoSaveSetupValues() {
+        localStorage.setItem('setup_budget_pax', setupBudget.value);
+        localStorage.setItem('setup_people_count', setupPeople.value);
+        localStorage.setItem('setup_days_count', setupDays.value);
+        localStorage.setItem('setup_rate_mode', rateMode.value);
+        localStorage.setItem('setup_manual_rate', manualRateInput.value);
+    }
+
     window.setFormModeTab = function(tabKey) {
         currentFormTab = tabKey;
         document.getElementById('tab-expense').className = tabKey === 'expense' ? 'tab-btn active' : 'tab-btn';
@@ -517,7 +535,6 @@
         if (currentFormTab === 'expense') formForeignLabel.innerText = dest;
         document.querySelectorAll('.home-curr-label').forEach(el => el.innerText = home);
         
-        // FIXED: Gracefully handle display metrics if input value box is completely blank
         const currentManualValue = parseFloat(manualRateInput.value);
         refManualRate.innerText = isNaN(currentManualValue) ? "0.0000" : currentManualValue.toFixed(4);
 
@@ -713,6 +730,7 @@
                         savedDestSelection = importedData.config.destinationCurrency || "JPY";
                     }
 
+                    autoSaveSetupValues(); // Sync persistence layers immediately
                     populateGlobalCurrencyMenus(autoExchangeRates);
                     calculateBudget();
                     alert("🎉 Backup file loaded successfully!");
@@ -758,10 +776,16 @@
         calculateBudget();
     };
 
+    // Capture changes to run both math operations AND automated persistence operations
     [setupBudget, setupPeople, setupDays, baseCurrency, foreignCurrency, rateMode, manualRateInput].forEach(input => {
-        input.addEventListener('input', () => calculateBudget());
+        input.addEventListener('input', () => {
+            autoSaveSetupValues();
+            calculateBudget();
+        });
     });
 
+    // Run Engine Lifecycle Initializations Safely
+    loadSavedSetupValues();
     fetchLiveRates();
 </script>
 </body>
