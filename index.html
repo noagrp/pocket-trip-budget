@@ -54,15 +54,10 @@
 
         .cat-report-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 4px; font-size: 0.9rem; border-bottom: 1px dashed var(--border); }
         
-        .day-group-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(15, 23, 42, 0.5); border-radius: 8px; margin-top: 14px; margin-bottom: 6px; border: 1px solid var(--border); }
-        .day-title { font-size: 0.85rem; font-weight: 800; color: var(--primary); text-transform: uppercase; }
-        .day-total { font-size: 0.85rem; font-weight: 700; color: var(--success); }
-
         .expense-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
         .exp-meta { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
         .exp-amt-box { text-align: right; }
         .exp-price { font-weight: 700; font-size: 1rem; }
-        .exp-converted { font-size: 0.75rem; color: var(--muted); }
 
         .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; background: var(--border); }
         .badge.pool-badge { background: rgba(74, 222, 128, 0.1); color: var(--success); }
@@ -70,11 +65,8 @@
 
         .delete-btn { background: rgba(244, 63, 94, 0.1); color: var(--danger); border: none; font-size: 1.1rem; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; }
 
-        .rate-info-bar { background: rgba(15, 23, 42, 0.4); border: 1px dashed var(--border); padding: 10px; border-radius: 10px; font-size: 0.75rem; color: var(--muted); margin-top: 10px; display: flex; justify-content: space-between; }
-        
         .backup-callout-text { grid-column: span 2; font-size: 0.72rem; color: var(--danger); background: rgba(248, 113, 113, 0.05); border: 1px solid rgba(248, 113, 113, 0.15); padding: 8px 10px; border-radius: 8px; text-align: center; font-weight: 500; margin-top: 4px; }
 
-        /* Print Enhancements */
         @media print {
             .mode-toggle-container, #card-config, #card-entry-form, button, .delete-btn, .backup-callout-text, #btn-print-report { display: none !important; }
             .container { max-width: 100%; padding: 0; }
@@ -107,12 +99,8 @@
             <div class="form-group"><label>Destination Currency</label><select id="foreign-currency"></select></div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-            <div class="form-group"><label>Rate Mode</label><select id="rate-mode"><option value="auto">Auto-Fetch API</option><option value="manual">Manual Override</option></select></div>
             <div class="form-group"><label>Manual Rate</label><input type="number" id="manual-rate-input" step="0.0001"></div>
         </div>
-        <div style="font-size: 0.7rem; color: var(--muted); margin-top: -8px; margin-bottom: 10px; padding-left: 5px;">
-    Last Auto-Fetched Rate (1 USD): <span id="rate-display-note" style="color: var(--primary);">Loading...</span>
-</div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <button class="btn-secondary" onclick="exportDataBackup()">📥 Export</button>
             <button class="btn-secondary" onclick="triggerImportSelection()">📤 Import</button>
@@ -164,9 +152,9 @@
 
 <script>
     let poolExpenses = JSON.parse(localStorage.getItem('trip_pool_expenses')) || [];
+    const currencies = ["USD", "EUR", "JPY", "GBP", "SGD", "MYR", "THB", "IDR", "VND", "KRW", "CNY", "AUD", "CAD", "CHF", "HKD", "NZD"];
     let savedHomeSelection = localStorage.getItem('trip_home_curr') || "USD";
     let savedDestSelection = localStorage.getItem('trip_dest_curr') || "JPY";
-    let autoExchangeRates = { "USD": 1, "JPY": 155, "EUR": 0.92, "GBP": 0.79, "SGD": 1.34, "MYR": 4.40 };
     let currentAppMode = 'active';
     let currentFormTab = 'expense';
 
@@ -175,34 +163,41 @@
     const setupDays = document.getElementById('setup-days');
     const baseCurrency = document.getElementById('base-currency');
     const foreignCurrency = document.getElementById('foreign-currency');
-    const rateMode = document.getElementById('rate-mode');
     const manualRateInput = document.getElementById('manual-rate-input');
     const dashTotalPool = document.getElementById('dash-total-pool');
     const dashRemaining = document.getElementById('dash-remaining');
     const dashSpent = document.getElementById('dash-spent');
     const dashDailyAllowance = document.getElementById('dash-daily-allowance');
 
+    function populateCurrencyMenus() {
+        baseCurrency.innerHTML = ''; foreignCurrency.innerHTML = '';
+        currencies.forEach(code => {
+            baseCurrency.add(new Option(code, code, code === savedHomeSelection, code === savedHomeSelection));
+            foreignCurrency.add(new Option(code, code, code === savedDestSelection, code === savedDestSelection));
+        });
+    }
+
     function loadSavedSetupValues() {
         setupBudget.value = localStorage.getItem('setup_budget_pax') || "";
         setupPeople.value = localStorage.getItem('setup_people_count') || "";
         setupDays.value = localStorage.getItem('setup_days_count') || "";
-        rateMode.value = localStorage.getItem('setup_rate_mode') || "auto";
         manualRateInput.value = localStorage.getItem('setup_manual_rate') || "";
+        populateCurrencyMenus();
     }
 
     function autoSaveSetupValues() {
         localStorage.setItem('setup_budget_pax', setupBudget.value);
         localStorage.setItem('setup_people_count', setupPeople.value);
         localStorage.setItem('setup_days_count', setupDays.value);
-        localStorage.setItem('setup_rate_mode', rateMode.value);
         localStorage.setItem('setup_manual_rate', manualRateInput.value);
+        localStorage.setItem('trip_home_curr', baseCurrency.value);
+        localStorage.setItem('trip_dest_curr', foreignCurrency.value);
     }
 
     window.setFormModeTab = function(tabKey) {
         currentFormTab = tabKey;
         document.getElementById('tab-expense').className = tabKey === 'expense' ? 'tab-btn active' : 'tab-btn';
         document.getElementById('tab-fund').className = tabKey === 'fund' ? 'tab-btn active' : 'tab-btn';
-        
         if (tabKey === 'fund') {
             document.getElementById('form-card-title').innerText = "💰 Add Group Pool Funds";
             document.getElementById('wrapper-input-cat').style.display = 'none';
@@ -221,54 +216,17 @@
         document.getElementById('btn-mode-active').className = mode === 'active' ? 'mode-btn active' : 'mode-btn';
         document.getElementById('btn-mode-done').className = mode === 'done' ? 'mode-btn active' : 'mode-btn';
         document.getElementById('btn-print-report').style.display = (mode === 'done') ? 'block' : 'none';
-
-        if (mode === 'done') {
-            document.getElementById('card-config').style.display = 'none';
-            document.getElementById('card-entry-form').style.display = 'none';
-            document.getElementById('box-daily-allowance').style.display = 'none';
-            document.getElementById('dashboard-title').innerText = "🏁 Final Trip Summary";
-        } else {
-            document.getElementById('card-config').style.display = 'block';
-            document.getElementById('card-entry-form').style.display = 'block';
-            document.getElementById('box-daily-allowance').style.display = 'block';
-            document.getElementById('dashboard-title').innerText = "📊 Total Fund Report";
-        }
+        document.getElementById('card-config').style.display = (mode === 'done') ? 'none' : 'block';
+        document.getElementById('card-entry-form').style.display = (mode === 'done') ? 'none' : 'block';
+        document.getElementById('box-daily-allowance').style.display = (mode === 'done') ? 'none' : 'block';
+        document.getElementById('card-category-report').style.display = (mode === 'done') ? 'block' : 'none';
+        document.getElementById('dashboard-title').innerText = (mode === 'done') ? "🏁 Final Trip Summary" : "📊 Total Fund Report";
         calculateBudget();
     };
 
-    function populateGlobalCurrencyMenus(rates) {
-        const codes = Object.keys(rates).sort();
-        baseCurrency.innerHTML = ''; foreignCurrency.innerHTML = '';
-        codes.forEach(code => {
-            const optH = new Option(code, code, code === savedHomeSelection, code === savedHomeSelection);
-            const optD = new Option(code, code, code === savedDestSelection, code === savedDestSelection);
-            baseCurrency.add(optH); foreignCurrency.add(optD);
-        });
-    }
-
-    function getActiveRate() {
-        const home = baseCurrency.value, dest = foreignCurrency.value;
-        if (home === dest) return 1.0;
-        return (rateMode.value === 'auto' && autoExchangeRates[dest]) ? (autoExchangeRates[dest] / autoExchangeRates[home]) : (parseFloat(manualRateInput.value) || 1.0);
-    }
-
-async function fetchLiveRates() {
-    try {
-        const res = await fetch(`https://open.er-api.com/v6/latest/USD`);
-        if (res.ok) { 
-            const data = await res.json();
-            autoExchangeRates = data.rates; 
-            // Update the new note with the primary target currency rate
-            document.getElementById('rate-display-note').innerText = 
-                (autoExchangeRates[foreignCurrency.value] || '---') + " " + foreignCurrency.value;
-            populateGlobalCurrencyMenus(autoExchangeRates); 
-        }
-    } catch (e) { populateGlobalCurrencyMenus(autoExchangeRates); }
-    calculateBudget();
-}
-
     function calculateBudget() {
         const home = baseCurrency.value;
+        const rate = parseFloat(manualRateInput.value) || 1.0;
         let totalPool = (parseFloat(setupBudget.value) || 0) * (parseInt(setupPeople.value) || 0);
         let totalSpent = 0;
         let catTotals = { "🍔 Food": 0, "🚗 Transport": 0, "🏨 Hotel": 0, "🎟️ Fun": 0, "🛍️ Shopping": 0, "📁 Others": 0 };
@@ -276,7 +234,7 @@ async function fetchLiveRates() {
         poolExpenses.forEach(exp => {
             if (exp.entryType === 'fund') totalPool += exp.foreignAmount;
             else {
-                const cost = exp.foreignAmount / exp.usedRateValue;
+                const cost = exp.foreignAmount / rate;
                 totalSpent += cost;
                 catTotals[exp.category] = (catTotals[exp.category] !== undefined) ? catTotals[exp.category] + cost : catTotals["📁 Others"] + cost;
             }
@@ -330,7 +288,7 @@ async function fetchLiveRates() {
             id: Date.now(), description: document.getElementById('exp-desc').value,
             category: currentFormTab === 'fund' ? '💼 Capital' : document.getElementById('exp-category').value,
             foreignAmount: parseFloat(document.getElementById('exp-amount').value),
-            usedRateValue: getActiveRate(), entryType: currentFormTab,
+            entryType: currentFormTab,
             displayDate: now.toLocaleDateString(), displayTime: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
         });
         localStorage.setItem('trip_pool_expenses', JSON.stringify(poolExpenses));
@@ -354,10 +312,11 @@ async function fetchLiveRates() {
         if (confirm("Permanently wipe all records?")) { localStorage.clear(); location.reload(); }
     };
 
-    [setupBudget, setupPeople, setupDays, baseCurrency, foreignCurrency, rateMode, manualRateInput].forEach(el => el.addEventListener('input', () => { autoSaveSetupValues(); calculateBudget(); }));
+    [setupBudget, setupPeople, setupDays, baseCurrency, foreignCurrency, manualRateInput].forEach(el => el.addEventListener('input', () => { autoSaveSetupValues(); calculateBudget(); }));
 
+    // Initialize display states
     loadSavedSetupValues();
-    fetchLiveRates();
+    setAppMode('active');
 </script>
 </body>
 </html>
